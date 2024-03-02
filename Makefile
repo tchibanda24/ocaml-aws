@@ -31,24 +31,13 @@ aws-autoscaling:
 
 # NOTE: This does not include aws-ec2, which is special-cased.
 LIBRARIES := \
-	aws-cloudformation \
-	aws-cloudtrail \
-	aws-cloudwatch \
-	aws-elasticache \
-	aws-elasticloadbalancing \
-	aws-kms \
-	aws-rds \
-	aws-sdb \
-	aws-ssm \
-	aws-sts \
-	aws-route53 \
-	aws-sqs \
+	aws-dynamodb \
 
 .PHONY: $(LIBRARIES)
 $(LIBRARIES): aws-%:
-	dune exec aws-gen -- -i input/$*/latest/service-2.json -r input/$*/overrides.json -e input/errors.json -o libraries
+	dune exec aws-gen -- -i input/$*/2012-08-10/service-2.json -r input/$*/overrides.json -e input/errors.json -o libraries
 
-gen: build aws-ec2 aws-autoscaling $(LIBRARIES) fmt
+gen: build $(LIBRARIES) fmt
 
 update-version: VERSION=$(shell cat CHANGES.md | grep -E '^[0-9]' | head -n 1 | cut -f1 -d':' )
 update-version:
