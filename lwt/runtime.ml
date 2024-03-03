@@ -63,11 +63,30 @@ let run_request
           ~region
           (M.to_http M.service region inp)
   in
+  let body =
+    match Uri.query uri with
+    | _ :: _ :: _ :: tl ->
+        List.fold_left
+          (fun acc (key, val_lst) -> acc ^ key ^ ": " ^ List.hd val_lst ^ ", ")
+          ""
+          tl
+    | _ -> ""
+  in
+  let uri = Uri.of_string (List.nth (String.split_on_char '?' (Uri.to_string uri)) 0) in
   let open Cohttp in
   let headers = Header.of_list headers in
   Lwt.catch
     (fun () ->
-      Cohttp_lwt_unix.Client.call ~headers meth uri
+      let _ =
+        let oc = open_out "test.txt" in
+        Printf.fprintf oc "%s" (Uri.to_string uri);
+        close_out oc
+      in
+      Cohttp_lwt_unix.Client.call
+        ~headers
+        ~body:(Cohttp_lwt.Body.of_string ("{" ^ body ^ "}"))
+        meth
+        uri
       >>= fun (resp, body) ->
       Cohttp_lwt.Body.to_string body
       >|= fun body ->

@@ -5,9 +5,7 @@ module Hash = struct
     | None -> Digestif.SHA256.digest_string str
 
   let sha256 ?key str = _sha256 ?key str |> Digestif.SHA256.to_raw_string
-
   let sha256_hex ?key str = _sha256 ?key str |> Digestif.SHA256.to_hex
-
   let sha256_base64 ?key str = Base64.encode_string @@ sha256 ?key str
 end
 
@@ -47,6 +45,12 @@ let sign_request ~access_key ~secret_key ?token ~service ~region (meth, uri, hea
     sign (sign (sign (sign ("AWS4" ^ key) date) region) service) "aws4_request"
   in
   let now = Time.now_utc () in
+  let amztarget =
+    match Uri.query uri with
+    | (_, service :: _) :: (_, version :: _) :: (_, action :: _) :: _ ->
+        service ^ "_" ^ version ^ "." ^ action
+    | _ -> ""
+  in
   let amzdate = Time.date_time now in
   let datestamp = Time.date_yymmdd now in
   let canonical_uri = "/" in
@@ -118,7 +122,8 @@ let sign_request ~access_key ~secret_key ?token ~service ~region (meth, uri, hea
       ]
   in
   let headers =
-    ("x-amz-date", amzdate)
+    ("x-amz-target", amztarget)
+    :: ("x-amz-date", amzdate)
     :: ("x-amz-content-sha256", payload_hash)
     :: ("Authorization", authorization_header)
     :: headers
